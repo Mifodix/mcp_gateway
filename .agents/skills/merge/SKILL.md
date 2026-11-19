@@ -54,6 +54,14 @@ contents. Do not commit secrets or local credentials (`AGENTS.md` section 4).
 If requested and unrelated edits cannot be separated non-interactively, or the
 intended source or destination is ambiguous, stop and ask a focused question.
 
+Before preparing a commit, verify that the current worktree contains the
+complete requested change, not only a valid-looking subset. Compare the
+requested file or artifact inventory with the files actually present. In a
+forked Delta worktree, untracked directories from another worktree may be
+absent. If anything required is missing, restore it from the requested source
+at its recorded revision; if that source or revision is unclear, stop and ask.
+Never commit a partial package as though it were complete.
+
 Run whitespace validation for the pending change:
 
 ```bash
@@ -61,12 +69,27 @@ git diff --check
 git diff --cached --check
 ```
 
+Before staging, verify the author and committer identities:
+
+```bash
+git var GIT_AUTHOR_IDENT
+git var GIT_COMMITTER_IDENT
+```
+
+If either check fails, stop and ask which identity to use. Once the user
+supplies or confirms an identity, use it only for that commit with per-command
+`git -c user.name=... -c user.email=...` flags. Do not silently change
+repository or global configuration, and do not hard-code an identity in this
+skill.
+
 Do not use `git add -A`, an interactive staging or rebase session, or an editor.
 When preparation requires a commit, stage explicit paths and commit with a
 concise message describing the requested change:
 
 ```bash
 git add -- <path>...
+git diff --cached --stat
+git diff --cached --name-status
 git diff --cached
 git diff --cached --check
 git commit -m "<concise-change-message>"
@@ -158,6 +181,22 @@ treat pending, failing, missing, or unverifiable required checks as success. If
 new review or remote-check requirements cannot be satisfied and verified under
 this direct-push workflow, stop and report the blocker instead of bypassing
 them.
+
+When combining checks in a shell script, use `set -e` or check every command's
+exit status explicitly. A later successful command must never mask an earlier
+failure.
+
+When comparing committed content with an upstream Git source, compare Git blob
+IDs rather than raw checkout bytes. Line-ending conversion such as
+`core.autocrlf=true` can make checkout bytes differ without changing committed
+content:
+
+```bash
+git rev-parse HEAD:<path>
+git -C <upstream-checkout> rev-parse <upstream-revision>:<path>
+```
+
+For each compared file, the two blob IDs must be identical.
 
 For a merge into an existing destination, also check the committed delta from
 the pre-merge destination recorded above:
