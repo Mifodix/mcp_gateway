@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Поток идентификаторов в code mode",
+    "output": ".archify/sequence-token-flow-20261121-030140/token-flow.html",
+    "quality_profile": "showcase"
+  },
+  "participants": [
+    { "id": "trusted", "type": "security", "label": "Доверенный сервис", "sublabel": "user_id + IDs" },
+    { "id": "harness", "type": "external", "label": "Agent harness", "sublabel": "агент/сабагент" },
+    { "id": "gateway", "type": "backend", "label": "MCP gateway", "sublabel": "session + proxy" },
+    { "id": "db", "type": "database", "label": "PostgreSQL", "sublabel": "session + IDs" },
+    { "id": "relay", "type": "security", "label": "Host relay", "sublabel": "mTLS + vm_session_id" },
+    { "id": "vm", "type": "backend", "label": "MicroVM", "sublabel": "Python + MCP-клиент" },
+    { "id": "upstream", "type": "external", "label": "MCP-сервер", "sublabel": "upstream tools" }
+  ],
+  "segments": [
+    { "from": 145, "to": 400, "label": "Создание сессии" },
+    { "from": 466, "to": 690, "label": "MCP-вызов из code mode" },
+    { "from": 700, "to": 730, "label": "Результат задачи" }
+  ],
+  "messages": [
+    { "id": "issue-context", "from": "trusted", "to": "harness", "y": 160, "label": "user_id + другие идентификаторы", "variant": "security" },
+    { "id": "session-request", "from": "harness", "to": "gateway", "y": 190, "label": "HTTPS: user_id, chat_id, run_id + исходные headers", "variant": "security" },
+    { "id": "session-create", "from": "gateway", "to": "db", "y": 225, "label": "resolve/create session + original headers", "variant": "security", "note": "Ключ: (user_id, chat_id, run_id); идентификаторы неизменны" },
+    { "id": "placement-create", "from": "gateway", "to": "db", "y": 295, "label": "placement: vm_session_id → host", "variant": "default" },
+    { "id": "vm-provision", "from": "gateway", "to": "relay", "y": 325, "label": "provision vm_session_id, без токена", "variant": "dashed" },
+    { "id": "vm-start", "from": "relay", "to": "vm", "y": 355, "label": "create/restore VM, без credentials", "variant": "dashed" },
+    { "id": "vm-call", "from": "vm", "to": "relay", "y": 470, "label": "vsock: MCP tools/call, без идентификаторов", "variant": "emphasis" },
+    { "id": "relay-call", "from": "relay", "to": "gateway", "y": 500, "label": "mTLS: vm_session_id + MCP tools/call", "variant": "security" },
+    { "id": "placement-check", "from": "gateway", "to": "db", "y": 535, "label": "verify placement + original headers", "variant": "security" },
+    { "id": "upstream-call", "from": "gateway", "to": "upstream", "y": 565, "label": "MCP tools/call + исходные end-to-end headers", "variant": "emphasis", "note": "vm_session_id upstream не получает" },
+    { "id": "upstream-result", "from": "upstream", "to": "gateway", "y": 615, "label": "MCP result или auth error", "variant": "return" },
+    { "id": "relay-result", "from": "gateway", "to": "relay", "y": 645, "label": "только MCP result", "variant": "return" },
+    { "id": "vm-result", "from": "relay", "to": "vm", "y": 675, "label": "только MCP result", "variant": "return" },
+    { "id": "task-result", "from": "gateway", "to": "harness", "y": 710, "label": "status/result задачи после durable snapshot", "variant": "return" }
+  ],
+  "activations": [
+    { "participant": "gateway", "from": 185, "to": 645, "type": "backend" },
+    { "participant": "relay", "from": 465, "to": 680, "type": "security" },
+    { "participant": "upstream", "from": 560, "to": 620, "type": "external" }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "Границы контекста",
+      "items": [
+        "Секретный токен отсутствует; идентификаторы идут Harness → Gateway → Upstream, но не попадают в microVM и host relay",
+        "user_id, chat_id и run_id неизменны в session registry и копируются в upstream; vm_session_id остаётся внутренним",
+        "MicroVM получает только MCP-результаты"
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "За рамками схемы",
+      "items": [
+        "Прямой вызов Harness → Gateway → Upstream без microVM не показан",
+        "KMS и token_version не используются; OpenBao и S3 snapshots не показаны для читаемости"
+      ]
+    }
+  ]
+}

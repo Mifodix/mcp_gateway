@@ -1,0 +1,35 @@
+{
+  "started_at": "2026-11-25T15:49:31.983579+00:00",
+  "host_platform": "Windows-11-10.0.26300-SP0",
+  "host_python": "3.14.6",
+  "image": "python:3.12",
+  "source": "msb-spike-source-1795621771-windows",
+  "restored": "msb-spike-restored-1795621771-windows",
+  "rollback": "msb-spike-rollback-1795621771-windows",
+  "snapshot_group": "msb-spike-group-1795621771-windows",
+  "msb_version": "msb 0.8.2",
+  "create_ms": 822.7,
+  "guest_python_version": "Python 3.12.16",
+  "network_probe": "NETWORK_BLOCKED",
+  "before_snapshot": {
+    "value": 41,
+    "message": "resident-in-python-memory"
+  },
+  "snapshot_ms": 632.2,
+  "source_removed_before_restore": true,
+  "restore_ms": 794.4,
+  "restored_state": {
+    "value": 42,
+    "message": "resident-in-python-memory",
+    "disk": "disk-before-snapshot"
+  },
+  "rollback_ms": 945.4,
+  "rollback_state": {
+    "value": 42,
+    "message": "resident-in-python-memory",
+    "disk": "disk-before-snapshot"
+  },
+  "rollback_passed": true,
+  "passed": true,
+  "finished_at": "2026-11-25T15:49:38.371277+00:00"
+}
